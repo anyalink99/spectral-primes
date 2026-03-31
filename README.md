@@ -23,7 +23,8 @@ This software is **not** a proof of any claim in that document. It reproduces **
 11. [Limitations and honesty notes](#limitations-and-honesty-notes)
 12. [Running tests](#running-tests)
 13. [C++ MPFR tool](#c-mpfr-tool-spectral_u)
-14. [License](#license)
+14. [Discrete FFT sandbox (`experiments/wild_theories`)](#discrete-fft-sandbox-experimentswild_theories)
+15. [License](#license)
 
 ---
 
@@ -52,6 +53,13 @@ Only zeros with `γ_n ≤ Λ` enter the sum. The Python code evaluates `U` in a 
 | **Scripts** | `scripts/build_zeros_csv.py` fills CSV via `mpmath.zetazero`. |
 | **Tests** | `pytest` under `tests/`. |
 | **C++ (optional)** | `cpp/spectral_u` — MPFR evaluation of `U(x,Λ)`; see [`cpp/README.md`](cpp/README.md). |
+| **FFT sandbox** | [`experiments/wild_theories/`](experiments/wild_theories/README.md) — informal `numpy.fft` experiments on prime/twin indicators, null models (shuffle, Welch, surrogates, block bootstrap); **not** the zeta-zero operator `U(x,Λ)`. |
+
+---
+
+## Discrete FFT sandbox (`experiments/wild_theories`)
+
+Separate from the main `spectral_primes` pipeline, the `experiments/wild_theories` folder explores **discrete** spectra of binary or residue sequences built from primes (twin masks, Liouville on integers, Ulam layout plots, and several statistical baselines). This is exploratory tooling and does not claim results about the Riemann zeros or the preprint’s `U(x,Λ)` object. Commands and module list: [`experiments/wild_theories/README.md`](experiments/wild_theories/README.md).
 
 ---
 

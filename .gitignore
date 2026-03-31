@@ -16,3 +16,6 @@ _extracted.txt
 .coverage
 htmlcov/
 cpp/build/
+
+# Generated plots and logs from experiments/wild_theories scripts
+experiments/wild_theories/output/
