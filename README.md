@@ -14,17 +14,18 @@ This software is **not** a proof of any claim in that document. It reproduces **
 2. [What this repository contains](#what-this-repository-contains)
 3. [Requirements](#requirements)
 4. [Installation](#installation)
-5. [Data: zeros and SQLite](#data-zeros-and-sqlite)
-6. [Command-line interface](#command-line-interface)
-7. [Python package layout](#python-package-layout)
-8. [Experiment design (three groups)](#experiment-design-three-groups)
-9. [Random sieve baseline (Cramer model)](#random-sieve-baseline-cramer-model)
-10. [Sparse operator, Varₙ, and permutation tests](#sparse-operator-varₙ-and-permutation-tests)
-11. [Limitations and honesty notes](#limitations-and-honesty-notes)
-12. [Running tests](#running-tests)
-13. [C++ MPFR tool](#c-mpfr-tool-spectral_u)
-14. [Discrete FFT sandbox (`experiments/wild_theories`)](#discrete-fft-sandbox-experimentswild_theories)
-15. [License](#license)
+5. [Reproducibility](#reproducibility)
+6. [Data: zeros and SQLite](#data-zeros-and-sqlite)
+7. [Command-line interface](#command-line-interface)
+8. [Python package layout](#python-package-layout)
+9. [Experiment design (three groups)](#experiment-design-three-groups)
+10. [Random sieve baseline (Cramer model)](#random-sieve-baseline-cramer-model)
+11. [Sparse operator, Varₙ, and permutation tests](#sparse-operator-varₙ-and-permutation-tests)
+12. [Limitations and honesty notes](#limitations-and-honesty-notes)
+13. [Running tests](#running-tests)
+14. [C++ MPFR tool](#c-mpfr-tool-spectral_u)
+15. [Discrete FFT sandbox (`experiments/wild_theories`)](#discrete-fft-sandbox-experimentswild_theories)
+16. [License](#license)
 
 ---
 
@@ -67,6 +68,7 @@ Separate from the main `spectral_primes` pipeline, the `experiments/wild_theorie
 
 - **Python** 3.10+
 - **Dependencies** (see `pyproject.toml` / `requirements.txt`): `numpy`, `sympy`, `mpmath`
+- **Optional:** `pip install -e ".[fast-primes]"` for `gmpy2`-accelerated interval prime checks (see [`CHANGELOG.md`](CHANGELOG.md))
 - **Dev / tests**: `pip install -e ".[dev]"` pulls `pytest`
 - **C++ (optional):** CMake 3.16+, a C++17 compiler, and **MPFR** (which depends on **GMP**)
 
@@ -88,6 +90,17 @@ pip install -e ".[dev]"
 ```
 
 Optional: `pip install -e ".[analysis]"` if you add SciPy-based code later (`pyproject.toml` lists optional extras).
+
+---
+
+## Reproducibility
+
+To tie a computational run to a **specific preprint revision**, record:
+
+- The **package version** from `pyproject.toml` (or `import importlib.metadata; importlib.metadata.version("spectral-primes")` after install).
+- The **git commit** (or release tag such as `v0.4.0`) of this repository.
+
+[`CHANGELOG.md`](CHANGELOG.md) summarizes API and CLI changes between versions. CI runs `pytest` on each push and pull request (see `.github/workflows/ci.yml`).
 
 ---
 
@@ -149,7 +162,8 @@ Fixes a pool of centres and a **fixed** random control set **B**. Shuffles the *
 |--------|---------|-------------|
 | `--reps` | `200` | Number of shuffles |
 | `--pool-factor` | `80` | Pool size ≥ `n * pool_factor` |
-| `--rank-anneal` | `0.05` | Recommended `> 0` so the null is not degenerate (see notes) |
+| `--rank-anneal` | `0.05` | Must be `> 0` for a non-degenerate γ-shuffle null; `0` requires `--allow-degenerate-null` |
+| `--allow-degenerate-null` | off | Allow `rank_anneal=0` (degenerate null; diagnostics only) |
 | *(overlap with `demo-sparse`)* | | |
 
 ### `curve` — export `U(x)` (full operator)
@@ -192,8 +206,8 @@ pytest -q
 |--------|------|
 | `spectral_primes.operator` | `U_batch`, `reference_stats` |
 | `spectral_primes.subset` | Varₙ energies, subset mask, `U_sparse_at` / `U_sparse_batch`, `reference_stats_sparse` |
-| `spectral_primes.primes` | Prime counting / density in an interval (`sympy.isprime`) |
-| `spectral_primes.experiment` | Three-group runs, Z helper, fixed-**B** permutation test |
+| `spectral_primes.primes` | Prime counting / density (`sympy` by default; optional `gmpy2` via `[fast-primes]`; warns for large endpoints) |
+| `spectral_primes.experiment` | Three-group runs, Z helper, fixed-**B** permutation test (`allow_degenerate_null` for `rank_anneal=0`) |
 | `spectral_primes.random_sieve` | Cramér field builder, `compare_prime_vs_cramer` |
 | `spectral_primes.io_data` | Load `γ` from SQLite or CSV |
 | `spectral_primes.cli` | Argument parsing and entry point |
@@ -220,7 +234,7 @@ u = U_batch(x, gammas, Lambda=80.0)
 5. **Group C:** centres where the operator is below `μ − kσ`.
 6. For each centre, estimate **prime density** (primes per `10^5` integers) in `[centre − half_width, centre + half_width)`.
 
-Prime checks use **SymPy** (deterministic for the ranges used here). This is illustrative at small scales, not a high-performance sieve for huge `x`.
+Prime checks use **SymPy** by default (deterministic for `n < 2^64`). For endpoints ≥ 10⁹, `prime_count_interval` emits a **warning**; install **`[fast-primes]`** (`gmpy2`) for faster per-integer tests, or use an external sieve for very large `x`. This stack is illustrative at moderate scales, not a replacement for a production sieve at preprint-scale `x`.
 
 ---
 
@@ -248,7 +262,7 @@ $$
 
 **Rank factor.** `r_n = exp(rank_anneal · (slot_n+1)/N))` uses the zero’s **position** in the input list (`slot_n`), not only `γ_n`. With `rank_anneal = 0`, `r_n ≡ 1` (closest to the γ-only Var rule in the preprint).
 
-**Why `rank_anneal` matters for `permute`.** If only `γ_n` enters `E_n` and the amplitude is the same for every slot, then **shuffling γ across slots does not change** `U_sparse(x)` (the selected multiset of contributing frequencies is unchanged). The permutation null would be **degenerate**. A small `rank_anneal > 0` breaks that symmetry so shuffles change the operator; this is a **simulation device**, not a claim that the `.docx` includes that factor. The plain sum `U(x,Λ)` is permutation-invariant under γ shuffle (commutative sum); see `tests/test_subset.py`.
+**Why `rank_anneal` matters for `permute`.** If only `γ_n` enters `E_n` and the amplitude is the same for every slot, then **shuffling γ across slots does not change** `U_sparse(x)` (the selected multiset of contributing frequencies is unchanged). The permutation null would be **degenerate**. A small `rank_anneal > 0` breaks that symmetry so shuffles change the operator; this is a **simulation device**, not a claim that the `.docx` includes that factor. The plain sum `U(x,Λ)` is permutation-invariant under γ shuffle (commutative sum); see `tests/test_subset.py`. The library **rejects** `permutation_test_sparse(..., rank_anneal=0)` unless `allow_degenerate_null=True`; the CLI requires **`--allow-degenerate-null`** with `--rank-anneal 0`.
 
 ---
 

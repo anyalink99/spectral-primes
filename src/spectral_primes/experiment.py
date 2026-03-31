@@ -251,11 +251,21 @@ def permutation_test_sparse(
     pool_factor: int = 80,
     seed: int = 42,
     rank_anneal: float = 0.05,
+    allow_degenerate_null: bool = False,
 ) -> dict:
     """
     Fixed pool of centers and fixed control group B; only gammas are shuffled (Fisher–Yates).
     Statistic: mean(density at A_high-U_sparse) - mean(density at B). Two-sided empirical p-value.
+
+    With rank_anneal=0, U_sparse is invariant under γ permutation (same multiset of frequencies);
+    the shuffle null is degenerate unless allow_degenerate_null=True (diagnostics only). See README.
     """
+    if rank_anneal == 0.0 and not allow_degenerate_null:
+        raise ValueError(
+            "permutation_test_sparse with rank_anneal=0: the γ-shuffle null is degenerate "
+            "(U_sparse is invariant; see README sparse operator / permutation tests). "
+            "Use rank_anneal > 0, or allow_degenerate_null=True for diagnostics only."
+        )
     rng = random.Random(seed)
     pool_size = max(n_per_group * pool_factor, 2000)
     span_lo = x_lo + window_half
