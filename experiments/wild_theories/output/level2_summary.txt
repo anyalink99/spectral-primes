@@ -1,0 +1,17 @@
+sieve vs SymPy twin mask [2,8000): OK
+Building twin mask [2, 100002) via sieve ...
+  n=100000, count_ones=1224, mean=0.012240
+
+Cyclic shift |FFT| invariance (full length): max diff over shifts [0, 1, 17, 33333]... = 4.441e-16
+  Note: for length-N DFT, |FFT(roll(x,s))| == |FFT(x)|; phase randomization by roll does not change magnitude spectrum of the whole vector.
+
+Welch seg_len=5000 hop=2500: under random cyclic roll, std(mean mag diff vs no roll) ~ 0.0023 (mean over 40 rolls)
+  max Welch bin (k>=1) no roll: 0.4237
+  max Welch bin over rolls: mean=0.4327 std=0.0023
+
+Wrote C:\projects\other\spectral primes\experiments\wild_theories\output\level2_welch_twin_vs_surrogate.png
+Wrote C:\projects\other\spectral primes\experiments\wild_theories\output\level2_welch_L5000.png
+
+Peakiness max/median (full FFT, n=100000): twin=48.083
+  surrogate (200): mean=4.071 std=0.236 z=186.85
+Wrote C:\projects\other\spectral primes\experiments\wild_theories\output\level2_peakiness_hist.png

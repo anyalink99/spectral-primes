@@ -1,0 +1,18 @@
+Building twin indicator [2, 5000) ...
+  n=4998, sum(twin)=126, density=0.02521
+Shuffle test: 200 permutations ...
+Wrote C:\projects\other\spectral primes\experiments\wild_theories\output\followup_shuffle_twin.png
+  nu~330/5000: k=330 orig=0.1107 shuffle_mean=0.1392 z~-0.38
+  nu~500/5000: k=500 orig=0.8824 shuffle_mean=0.1340 z~10.20
+
+Building twin indicator [2, 50000) ... (SymPy isprime)
+  n=49998, sum(twin)=705
+Wrote C:\projects\other\spectral primes\experiments\wild_theories\output\followup_twin_scale_5k_vs_50k.png
+  argmax nu (low-half): n=4998 -> k=833, nu=0.166667
+  argmax nu (low-half): n=49998 -> k=16666, nu=0.333333
+  fixed nu (bins 330/5000 and 500/5000):
+    330/5000: n=4998 k=330 |FFT|=0.1107 ; n=49998 k=3300 |FFT|=0.0620
+    500/5000: n=4998 k=500 |FFT|=0.8824 ; n=49998 k=5000 |FFT|=1.5611
+Wrote C:\projects\other\spectral primes\experiments\wild_theories\output\followup_twin_vs_liouville.png
+  total sum|FFT|^2 twin=63.00 liouville=2499.96
+  peakiness max/median (k>=1): twin=16.608 liouville=2.925

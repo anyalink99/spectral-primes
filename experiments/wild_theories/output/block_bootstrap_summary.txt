@@ -1,0 +1,9 @@
+twin mask [2, 100002) sieve ...
+  n=100000, mean=0.012240, spectrum_peakiness(data)=48.0827
+
+Block bootstrap: n_boot=450 per block size
+  B=  50: boot mean=43.109 std=0.152  z(obs vs boot)=32.67  P(boot>=obs)=0.0000
+  B= 100: boot mean=43.360 std=0.143  z(obs vs boot)=33.09  P(boot>=obs)=0.0000
+  B= 500: boot mean=44.107 std=0.157  z(obs vs boot)=25.40  P(boot>=obs)=0.0000
+  B=1000: boot mean=44.618 std=0.153  z(obs vs boot)=22.67  P(boot>=obs)=0.0000
+  B=2000: boot mean=45.101 std=0.155  z(obs vs boot)=19.28  P(boot>=obs)=0.0000

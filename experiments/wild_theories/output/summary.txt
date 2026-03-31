@@ -1,0 +1,15 @@
+=== Segment [2, 5000) ===
+twin vs Bernoulli(p=twin_density): {'n': 4998, 'p_bernoulli': 0.025210084033613446, 'energy_data': 62.99999999999999, 'energy_random_mean': 60.72620448179272, 'energy_random_std': 4.943296641213852, 'z_vs_random': 0.45997553520254253}
+prime vs Bernoulli(p=mean): {'n': 4998, 'p_bernoulli': 0.13385354141656663, 'energy_data': 334.23269307723086, 'energy_random_mean': 288.78758303321325, 'energy_random_std': 8.06945651658539, 'z_vs_random': 5.631743593959884}
+consecutive primes mod 4 (n=2000): peak_k=676, |mag|=3.1494, E=1000.0740
+twin gaps along primes (5000 gaps): mean=0.1360, FFT E=293.7796
+
+=== Scaling (windows) ===
+prime
+  [10000, 20000) peak_k=5000 peak=10.3300 E=516.5000
+  [100000, 110000) peak_k=5000 peak=8.6100 E=430.5000
+  [1000000, 1010000) peak_k=5000 peak=7.5300 E=376.5000
+twin
+  [10000, 20000) peak_k=5000 peak=1.3700 E=68.5000
+  [100000, 110000) peak_k=5000 peak=0.9600 E=48.0000
+  [1000000, 1010000) peak_k=5000 peak=0.8400 E=42.0000

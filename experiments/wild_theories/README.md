@@ -17,7 +17,7 @@ pip install matplotlib
 python -m experiments.wild_theories.plot_results
 ```
 
-Файлы появляются в `experiments/wild_theories/output/`.
+Готовые графики и текстовые сводки лежат в `experiments/wild_theories/output/` и **включены в репозиторий**; при изменении кода их можно пересобрать командами выше.
 
 Дополнительные проверки (shuffle, масштаб 50k, Лиувилль):
 
