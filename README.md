@@ -21,7 +21,8 @@ This software is **not** a proof of any claim in that document. It reproduces **
 9. [Sparse operator, Varₙ, and permutation tests](#sparse-operator-varₙ-and-permutation-tests)
 10. [Limitations and honesty notes](#limitations-and-honesty-notes)
 11. [Running tests](#running-tests)
-12. [License](#license)
+12. [C++ MPFR tool](#c-mpfr-tool-spectral_u)
+13. [License](#license)
 
 ---
 
@@ -35,7 +36,7 @@ U(x,\Lambda) = \sum_{\gamma_n \le \Lambda} \omega(\gamma_n,\Lambda)\,\frac{\cos(
 \omega(\gamma,\Lambda) = \exp\left(-\frac{\gamma^2}{2\Lambda^2}\right).
 $$
 
-Only zeros with `γ_n ≤ Λ` enter the sum. The code evaluates `U` in a **vectorized** way over many `x` at once (`numpy`).
+Only zeros with `γ_n ≤ Λ` enter the sum. The Python code evaluates `U` in a **vectorized** way over many `x` at once (`numpy`). An optional **C++** utility [`spectral_u`](cpp/README.md) uses **GNU MPFR** (and GMP) for arbitrary-precision values of the same sum—useful for large `x` or cross-checks.
 
 ---
 
@@ -49,6 +50,7 @@ Only zeros with `γ_n ≤ Λ` enter the sum. The code evaluates `U` in a **vecto
 | **CLI** | Entry point `spectral-primes` with subcommands `demo`, `demo-sparse`, `permute`, `curve`. |
 | **Scripts** | `scripts/build_zeros_csv.py` fills CSV via `mpmath.zetazero`. |
 | **Tests** | `pytest` under `tests/`. |
+| **C++ (optional)** | `cpp/spectral_u` — MPFR evaluation of `U(x,Λ)`; see [`cpp/README.md`](cpp/README.md). |
 
 ---
 
@@ -57,6 +59,7 @@ Only zeros with `γ_n ≤ Λ` enter the sum. The code evaluates `U` in a **vecto
 - **Python** 3.10+
 - **Dependencies** (see `pyproject.toml` / `requirements.txt`): `numpy`, `sympy`, `mpmath`
 - **Dev / tests**: `pip install -e ".[dev]"` pulls `pytest`
+- **C++ (optional):** CMake 3.16+, a C++17 compiler, and **MPFR** (which depends on **GMP**)
 
 ---
 
@@ -234,6 +237,20 @@ $$
 ```bash
 pytest -q
 ```
+
+---
+
+## C++ MPFR tool (`spectral_u`)
+
+The [`cpp/`](cpp/) directory builds a small program that computes the **same** full operator `U(x,Λ)` as Python, with **rounded arbitrary precision** via [GNU MPFR](https://www.mpfr.org/) (built on [GMP](https://gmplib.org/)).
+
+```bash
+cmake -S cpp -B cpp/build -DCMAKE_BUILD_TYPE=Release
+cmake --build cpp/build
+./cpp/build/spectral_u --prec 512 --lambda 80 --x 1e14
+```
+
+Full dependency list, Windows/vcpkg/MSYS2 notes, and flags are in **[`cpp/README.md`](cpp/README.md)**. This does **not** reimplement zeta-zero finding (still use Python/`mpmath` for `build_zeros_csv.py`).
 
 ---
 

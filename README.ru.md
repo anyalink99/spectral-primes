@@ -21,7 +21,8 @@
 9. [Разрежённый оператор, Varₙ и перестановочные тесты](#разрежённый-оператор-varₙ-и-перестановочные-тесты)
 10. [Ограничения и честные замечания](#ограничения-и-честные-замечания)
 11. [Запуск тестов](#запуск-тестов)
-12. [Лицензия](#лицензия)
+12. [C++ и MPFR](#c-mpfr-tool-spectral_u)
+13. [Лицензия](#лицензия)
 
 ---
 
@@ -35,7 +36,7 @@ U(x,\Lambda) = \sum_{\gamma_n \le \Lambda} \omega(\gamma_n,\Lambda)\,\frac{\cos(
 \omega(\gamma,\Lambda) = \exp\left(-\frac{\gamma^2}{2\Lambda^2}\right).
 $$
 
-В сумму входят только нули с `γ_n ≤ Λ`. Код считает `U` **векторизованно** для многих значений `x` сразу (`numpy`).
+В сумму входят только нули с `γ_n ≤ Λ`. В Python `U` считается **векторизованно** для многих `x` (`numpy`). Дополнительно есть **C++**-утилита [`spectral_u`](cpp/README.md) на **GNU MPFR** (и GMP) для произвольной точности той же суммы — удобно при больших `x` и для сверки.
 
 ---
 
@@ -49,6 +50,7 @@ $$
 | **CLI** | Точка входа `spectral-primes`: подкоманды `demo`, `demo-sparse`, `permute`, `curve`. |
 | **Скрипты** | `scripts/build_zeros_csv.py` заполняет CSV через `mpmath.zetazero`. |
 | **Тесты** | `pytest` в каталоге `tests/`. |
+| **C++ (опционально)** | `cpp/spectral_u` — вычисление `U(x,Λ)` в MPFR; см. [`cpp/README.md`](cpp/README.md). |
 
 ---
 
@@ -57,6 +59,7 @@ $$
 - **Python** 3.10+
 - **Зависимости** (`pyproject.toml` / `requirements.txt`): `numpy`, `sympy`, `mpmath`
 - **Разработка / тесты**: `pip install -e ".[dev]"` подтянет `pytest`
+- **C++ (опционально):** CMake 3.16+, компилятор C++17 и **MPFR** (зависит от **GMP**)
 
 ---
 
@@ -234,6 +237,20 @@ $$
 ```bash
 pytest -q
 ```
+
+---
+
+## C++ MPFR tool (`spectral_u`)
+
+В каталоге [`cpp/`](cpp/) собирается небольшая программа, которая считает **ту же** полную сумму `U(x,Λ)`, что и Python, с **произвольной точностью** и корректным округлением через [GNU MPFR](https://www.mpfr.org/) (на базе [GMP](https://gmplib.org/)).
+
+```bash
+cmake -S cpp -B cpp/build -DCMAKE_BUILD_TYPE=Release
+cmake --build cpp/build
+./cpp/build/spectral_u --prec 512 --lambda 80 --x 1e14
+```
+
+Зависимости, Windows / vcpkg / MSYS2 и ключи командной строки — в **[`cpp/README.md`](cpp/README.md)** (на английском). Поиск нулей дзета в C++ **не** реализован: по-прежнему `scripts/build_zeros_csv.py` и Python/`mpmath`.
 
 ---
 
