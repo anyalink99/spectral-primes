@@ -18,11 +18,12 @@ This software is **not** a proof of any claim in that document. It reproduces **
 6. [Command-line interface](#command-line-interface)
 7. [Python package layout](#python-package-layout)
 8. [Experiment design (three groups)](#experiment-design-three-groups)
-9. [Sparse operator, Varₙ, and permutation tests](#sparse-operator-varₙ-and-permutation-tests)
-10. [Limitations and honesty notes](#limitations-and-honesty-notes)
-11. [Running tests](#running-tests)
-12. [C++ MPFR tool](#c-mpfr-tool-spectral_u)
-13. [License](#license)
+9. [Random sieve baseline (Cramer model)](#random-sieve-baseline-cramer-model)
+10. [Sparse operator, Varₙ, and permutation tests](#sparse-operator-varₙ-and-permutation-tests)
+11. [Limitations and honesty notes](#limitations-and-honesty-notes)
+12. [Running tests](#running-tests)
+13. [C++ MPFR tool](#c-mpfr-tool-spectral_u)
+14. [License](#license)
 
 ---
 
@@ -46,8 +47,8 @@ Only zeros with `γ_n ≤ Λ` enter the sum. The Python code evaluates `U` in a 
 |------|-------------|
 | **Data** | Seed file `data/zeros.csv` (indexed `γ_n`; default build has hundreds of zeros — regenerate for more). |
 | **Database** | `sql/schema.sql` + `scripts/init_db.py` → SQLite `data/zeta_zeros.sqlite3` (gitignored after build). |
-| **Core library** | `spectral_primes`: `U(x)`, optional **Varₙ-based sparse** `U_sparse`, prime density in intervals, demos, permutation helper. |
-| **CLI** | Entry point `spectral-primes` with subcommands `demo`, `demo-sparse`, `permute`, `curve`. |
+| **Core library** | `spectral_primes`: `U(x)`, optional **Varₙ-based sparse** `U_sparse`, prime density, **Cramer random-sieve** baseline (`random_sieve`), demos, permutation helper. |
+| **CLI** | `spectral-primes`: `demo`, `demo-sparse`, `permute`, `random-compare`, `curve`. |
 | **Scripts** | `scripts/build_zeros_csv.py` fills CSV via `mpmath.zetazero`. |
 | **Tests** | `pytest` under `tests/`. |
 | **C++ (optional)** | `cpp/spectral_u` — MPFR evaluation of `U(x,Λ)`; see [`cpp/README.md`](cpp/README.md). |
@@ -153,6 +154,16 @@ Log-spaced grid; uses **full** `U`, not sparse.
 | `--points` | `50` | Number of points |
 | `--Lambda` | `80` | Cutoff |
 
+### `random-compare` — primes vs Cramer random sieve
+
+Does **not** use zeta zeros. Draws `n` random window centres in `[x_lo, x_hi]`, computes **true** prime density in each window, and compares to **independent** *Cramer-style* realizations: each integer `m ≥ 2` is marked with probability `1 / ln m` (independently), giving a pseudo-prime set with similar *mean* density but **no** arithmetic structure. One field is built per “universe”; the mean density across windows is recorded for many universes. Reports a one-sided empirical **P**(mean random &lt; mean true) — how often the random model’s global mean falls below the observed prime mean on the same windows.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--n` | `60` | Number of random window centres |
+| `--universes` | `100` | Independent Cramer fields |
+| `--x-lo`, `--x-hi`, `--half-width`, `--seed` | same spirit as `demo` | |
+
 Example:
 
 ```bash
@@ -160,6 +171,7 @@ python scripts/init_db.py
 spectral-primes demo --n 30
 spectral-primes demo-sparse --delta 300 --n-t 48 --n 30
 spectral-primes permute --reps 200 --n 25
+spectral-primes random-compare --n 80 --universes 120
 spectral-primes curve --points 100 > u_curve.tsv
 pytest -q
 ```
@@ -174,6 +186,7 @@ pytest -q
 | `spectral_primes.subset` | Varₙ energies, subset mask, `U_sparse_at` / `U_sparse_batch`, `reference_stats_sparse` |
 | `spectral_primes.primes` | Prime counting / density in an interval (`sympy.isprime`) |
 | `spectral_primes.experiment` | Three-group runs, Z helper, fixed-**B** permutation test |
+| `spectral_primes.random_sieve` | Cramér field builder, `compare_prime_vs_cramer` |
 | `spectral_primes.io_data` | Load `γ` from SQLite or CSV |
 | `spectral_primes.cli` | Argument parsing and entry point |
 
@@ -203,6 +216,14 @@ Prime checks use **SymPy** (deterministic for the ranges used here). This is ill
 
 ---
 
+## Random sieve baseline (Cramer model)
+
+To separate “**sparse like primes**” from “**actual primes**”, the package implements a textbook **stochastic null** (often associated with Cramer): each `n ≥ 2` is labelled independently with probability `1 / ln n` (and `n < 2` never). This matches the *first-order* expected density `~ 1 / ln x` but ignores divisibility (so it is **not** a claim that primes behave exactly like this process).
+
+The CLI command `random-compare` uses the **same random windows** for true primes and for many independent Cramer universes. If the empirical P-value is high, the observed mean prime density in those windows is **not unusual** for this null; if low, true primes are **systematically denser** (or rarer, depending on tail) than the model in that slice — a hint that the “fingerprint” goes beyond i.i.d. thinning. The model is still crude (known issues for fine statistics, e.g. Goldbach-type heuristics); treat results as **exploratory**.
+
+---
+
 ## Sparse operator, Varₙ, and permutation tests
 
 **Local energy.** On `[x − δ, x + δ]`, approximate
@@ -228,6 +249,7 @@ $$
 - **Scale:** Effects in the preprint are stated for very large `x` and many zeros; modest `x` and few zeros produce **noise** and different prime density scale.
 - **Statistics:** CLI Z-scores and permutation p-values are **illustrative**; they are not a replication of the preprint’s full registered protocol.
 - **Permutation:** Interpretation depends on `rank_anneal` and on the fixed-pool / fixed-**B** design documented above.
+- **Cramer model:** A convenient null for *density*, not a faithful model of all prime correlations.
 - **No crypto claims:** None of this is offered as a factorization or cryptanalysis tool.
 
 ---

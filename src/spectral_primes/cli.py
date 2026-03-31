@@ -14,6 +14,7 @@ from spectral_primes.experiment import (
 )
 from spectral_primes.io_data import load_gammas_from_csv, load_gammas_from_sqlite
 from spectral_primes.operator import U_batch
+from spectral_primes.random_sieve import compare_prime_vs_cramer
 
 
 def _load_gammas(args: argparse.Namespace) -> np.ndarray:
@@ -118,6 +119,36 @@ def cmd_permute(args: argparse.Namespace) -> None:
     print(f"rank_anneal: {out['rank_anneal']}")
 
 
+def cmd_random_compare(args: argparse.Namespace) -> None:
+    r = compare_prime_vs_cramer(
+        x_lo=args.x_lo,
+        x_hi=args.x_hi,
+        half_width=args.half_width,
+        n_windows=args.n,
+        seed=args.seed,
+        universes=args.universes,
+    )
+    print("Prime vs Cramer random sieve (independent 1/ln n marks on integers)")
+    print(f"Range [x_lo, x_hi] = [{args.x_lo}, {args.x_hi}], half_width = {r.half_width}")
+    print(f"Windows: {r.n_windows}, seed = {r.seed}, Cramer universes = {r.universes}")
+    print()
+    print(f"True primes:   mean density (per 1e5) = {r.real_mean:.4f}  sd = {r.real_std:.4f}")
+    print(
+        f"Cramer u=0:    mean over windows = {r.random_mean_universe0:.4f}  "
+        f"sd across windows = {r.random_std_within_universe0:.4f}"
+    )
+    print(
+        f"Cramer means:  mean of universe-averages = {r.mean_of_universe_means:.4f}  "
+        f"sd between universes = {r.std_of_universe_means:.4f}"
+    )
+    print()
+    print(
+        "Empirical P( mean_random_universe < mean_real ) = "
+        f"{r.empirical_p_real_exceeds_random:.4f}"
+    )
+    print("(one-sided: how often the random model's global mean is below true prime mean)")
+
+
 def cmd_curve(args: argparse.Namespace) -> None:
     """Print U(x) along a grid (sanity check / plotting source)."""
     g = _load_gammas(args)
@@ -182,6 +213,18 @@ def main(argv: list[str] | None = None) -> None:
         help="required >0 for non-degenerate gamma shuffle null (default 0.05)",
     )
     pm.set_defaults(func=cmd_permute)
+
+    rc = sub.add_parser(
+        "random-compare",
+        help="Compare window prime density to Cramer random-sieve baseline",
+    )
+    rc.add_argument("--x-lo", type=int, default=2_000_000, dest="x_lo")
+    rc.add_argument("--x-hi", type=int, default=8_000_000, dest="x_hi")
+    rc.add_argument("--half-width", type=int, default=400, dest="half_width")
+    rc.add_argument("--n", type=int, default=60, help="number of random window centres")
+    rc.add_argument("--universes", type=int, default=100, help="independent Cramer fields")
+    rc.add_argument("--seed", type=int, default=42)
+    rc.set_defaults(func=cmd_random_compare)
 
     c = sub.add_parser("curve", help="Export U(x) on a log-spaced grid")
     c.add_argument("--Lambda", type=float, default=80.0)
