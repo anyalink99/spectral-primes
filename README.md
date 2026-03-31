@@ -2,11 +2,11 @@
 
 Computational companion to the preprint *«Спектральная аппроксимация локальных максимумов плотности простых чисел»* (`spectral_primes.docx`): a **regularized spectral operator** built from imaginary parts `γ_n` of nontrivial Riemann zeta zeros,
 
-\[
-U(x,\Lambda) = \sum_{\gamma_n \le \Lambda} \omega(\gamma_n,\Lambda)\,\frac{\cos(\gamma_n \ln x)}{\gamma_n},
+$$
+U(x,\Lambda) = \sum_{\gamma_n \le \Lambda} \omega(\gamma_n,\Lambda)\,\frac{\cos(\gamma_n \ln x)}{\gamma_n}
 \qquad
-\omega(\gamma,\Lambda) = \exp\!\Big(-\frac{\gamma^2}{2\Lambda^2}\Big).
-\]
+\omega(\gamma,\Lambda) = \exp\left(-\frac{\gamma^2}{2\Lambda^2}\right).
+$$
 
 The repo provides:
 
