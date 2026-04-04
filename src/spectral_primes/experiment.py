@@ -7,6 +7,7 @@ methodology mirrors the paper without claiming the same p-values.
 from __future__ import annotations
 
 import random
+import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -14,6 +15,36 @@ import numpy as np
 from spectral_primes.operator import U_batch, reference_stats
 from spectral_primes.primes import prime_density_per_1e5
 from spectral_primes.subset import U_sparse_batch, reference_stats_sparse
+
+
+# ---------------------------------------------------------------------------
+# Signal-to-noise heuristics (preprint caveats)
+# ---------------------------------------------------------------------------
+
+def _warn_snr(*, Lambda: float, x_hi: int, n_zeros_used: int) -> None:
+    """Emit warnings when the experimental regime is likely too noisy.
+
+    * Few zeros (small Λ) ⇒ the operator captures little of the spectral
+      structure, making any effect hard to detect.
+    * Large x with few zeros amplifies finite-truncation noise relative to
+      the prime-density fluctuations being probed.
+    """
+    if n_zeros_used < 30:
+        warnings.warn(
+            f"Only {n_zeros_used} zeros contribute (Λ={Lambda}). "
+            "With fewer than ~30 spectral terms the operator U may not resolve "
+            "prime-density fluctuations reliably. Consider raising Λ.",
+            UserWarning,
+            stacklevel=3,
+        )
+    if Lambda < 100 and x_hi > 5e7:
+        warnings.warn(
+            f"Λ={Lambda} with x up to {x_hi:.2g}: the spectral resolution is coarse "
+            "relative to the scale of x. Results may be dominated by truncation noise "
+            "rather than genuine spectral structure (see preprint §4 caveats).",
+            UserWarning,
+            stacklevel=3,
+        )
 
 
 @dataclass
@@ -37,6 +68,8 @@ def run_three_group_demo(
     seed: int = 42,
 ) -> tuple[GroupResult, GroupResult, GroupResult, dict, np.ndarray, np.ndarray, np.ndarray]:
     rng = random.Random(seed)
+    n_zeros_used = int(np.sum(np.asarray(gammas, dtype=np.float64) <= Lambda))
+    _warn_snr(Lambda=Lambda, x_hi=x_hi, n_zeros_used=n_zeros_used)
     ref_x = np.linspace(x_lo, x_hi, ref_grid_points, dtype=np.float64)
     mu_u, sig_u = reference_stats(ref_x, gammas, Lambda)
     if sig_u <= 0:
@@ -186,6 +219,8 @@ def run_three_group_demo_sparse(
     rank_anneal: float = 0.0,
 ) -> tuple[GroupResult, GroupResult, GroupResult, dict, np.ndarray, np.ndarray, np.ndarray]:
     rng = random.Random(seed)
+    n_zeros_used = int(np.sum(np.asarray(gammas, dtype=np.float64) <= Lambda))
+    _warn_snr(Lambda=Lambda, x_hi=x_hi, n_zeros_used=n_zeros_used)
     ref_x = np.linspace(x_lo, x_hi, ref_grid_points, dtype=np.float64)
     mu_u, sig_u = reference_stats_sparse(
         ref_x, gammas, Lambda, delta, n_t, rank_anneal
@@ -266,6 +301,17 @@ def permutation_test_sparse(
             "(U_sparse is invariant; see README sparse operator / permutation tests). "
             "Use rank_anneal > 0, or allow_degenerate_null=True for diagnostics only."
         )
+    if rank_anneal > 0.0:
+        warnings.warn(
+            f"rank_anneal={rank_anneal}: the slot-rank weighting breaks γ-permutation "
+            "symmetry to create a non-trivial null, but this extension is not part of "
+            "the original preprint. Interpret p-values as empirical calibration of the "
+            "rank-augmented operator, not as a direct test of the preprint's U_sparse.",
+            UserWarning,
+            stacklevel=2,
+        )
+    n_zeros_used = int(np.sum(np.asarray(gammas, dtype=np.float64) <= Lambda))
+    _warn_snr(Lambda=Lambda, x_hi=x_hi, n_zeros_used=n_zeros_used)
     rng = random.Random(seed)
     pool_size = max(n_per_group * pool_factor, 2000)
     span_lo = x_lo + window_half

@@ -1,51 +1,73 @@
 from __future__ import annotations
 
+import math
 import warnings
-from typing import Callable
 
-from sympy import isprime as sympy_isprime
+# ---------------------------------------------------------------------------
+# Segment-sieve implementation (replaces per-integer isprime for intervals).
+# Complexity: O(√b · log log √b) for small primes + O(b-a) marking.
+# ---------------------------------------------------------------------------
 
-try:
-    import gmpy2
-except ImportError:
-    gmpy2 = None  # type: ignore[misc, assignment]
-
-# SymPy isprime per integer in [a,b) becomes costly for very large endpoints; warn once per call site.
-_LARGE_INTERVAL_WARN_AT = 10**9
-
-
-def _choose_isprime() -> Callable[[int], bool]:
-    if gmpy2 is not None:
-
-        def _p(n: int) -> bool:
-            return bool(gmpy2.is_prime(n))
-
-        return _p
-    return sympy_isprime
+# For intervals ending above this threshold we warn that the sieve may
+# allocate a non-trivial amount of memory (though still far faster than
+# per-element primality testing).
+_LARGE_INTERVAL_WARN_AT = 10**14
 
 
-_isprime: Callable[[int], bool] = _choose_isprime()
+def _small_primes(limit: int) -> list[int]:
+    """Sieve of Eratosthenes up to *limit* (inclusive). Returns list of primes."""
+    if limit < 2:
+        return []
+    sieve = bytearray(b"\x01") * (limit + 1)
+    sieve[0] = sieve[1] = 0
+    for i in range(2, int(math.isqrt(limit)) + 1):
+        if sieve[i]:
+            sieve[i * i :: i] = bytearray(len(sieve[i * i :: i]))
+    return [i for i, v in enumerate(sieve) if v]
+
+
+def _segment_sieve_count(a: int, b: int) -> int:
+    """Count primes in [a, b) using a segmented sieve of Eratosthenes."""
+    if b <= a:
+        return 0
+    if a < 2:
+        a = 2
+    if b <= a:
+        return 0
+
+    length = b - a
+    is_prime = bytearray(b"\x01") * length  # is_prime[i] ↔ (a+i) is prime
+
+    # We need small primes up to √(b-1).
+    sp = _small_primes(int(math.isqrt(b - 1)) + 1)
+    for p in sp:
+        # First multiple of p in [a, b).
+        start = ((a + p - 1) // p) * p
+        if start == p:          # p itself is prime, don't mark it
+            start += p
+        for j in range(start - a, length, p):
+            is_prime[j] = 0
+
+    return sum(is_prime)
 
 
 def prime_count_interval(a: int, b: int) -> int:
-    """Count primes p with a ≤ p < b (half-open).
+    """Count primes p with a <= p < b (half-open).
 
-    Uses SymPy by default (deterministic for n < 2^64). With optional ``gmpy2``
-    (``pip install "spectral-primes[fast-primes]"``), uses ``gmpy2.is_prime`` instead.
+    Uses a segmented sieve of Eratosthenes — O(sqrt(b) log log sqrt(b)) time,
+    dramatically faster than per-integer primality tests for intervals above ~1000.
     """
     if b <= a:
         return 0
-    hi = b - 1
-    if hi >= _LARGE_INTERVAL_WARN_AT or a >= _LARGE_INTERVAL_WARN_AT:
+    if b - 1 >= _LARGE_INTERVAL_WARN_AT or a >= _LARGE_INTERVAL_WARN_AT:
         warnings.warn(
-            "prime_count_interval: endpoints are large; each integer in [a,b) is tested "
-            "individually (SymPy or gmpy2). For x ~ 1e14-scale work, prefer a segment sieve "
-            "or install gmpy2 via extras [fast-primes].",
+            "prime_count_interval: endpoints >= 1e14. The segment sieve is still correct "
+            "but may allocate substantial memory for the marking array. Consider chunking "
+            "the interval if memory is tight.",
             UserWarning,
             stacklevel=2,
         )
-    ip = _isprime
-    return sum(1 for n in range(a, b) if ip(n))
+    return _segment_sieve_count(a, b)
 
 
 def prime_density_per_1e5(center: int, half_width: int) -> float:
