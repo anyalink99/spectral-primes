@@ -96,6 +96,13 @@ def cmd_demo_sparse(args: argparse.Namespace) -> None:
 
 def cmd_permute(args: argparse.Namespace) -> None:
     g = _load_gammas(args)
+    if args.rank_anneal == 0.0 and not args.allow_degenerate_null:
+        print(
+            "permute: rank_anneal=0 gives a degenerate permutation null (γ shuffle does not "
+            "change U_sparse). Use --rank-anneal > 0 or --allow-degenerate-null for diagnostics.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     out = permutation_test_sparse(
         g,
         Lambda=args.Lambda,
@@ -110,6 +117,7 @@ def cmd_permute(args: argparse.Namespace) -> None:
         pool_factor=args.pool_factor,
         seed=args.seed,
         rank_anneal=args.rank_anneal,
+        allow_degenerate_null=args.allow_degenerate_null,
     )
     print("Permutation test (fixed centers + fixed B; shuffle gamma multiset)")
     print(f"Observed mean(A) - mean(B) density: {out['d_observed']:.6g}")
@@ -210,9 +218,15 @@ def main(argv: list[str] | None = None) -> None:
         type=float,
         default=0.05,
         dest="rank_anneal",
-        help="required >0 for non-degenerate gamma shuffle null (default 0.05)",
+        help="must be >0 for a non-degenerate γ-shuffle null (default 0.05); 0 needs --allow-degenerate-null",
     )
-    pm.set_defaults(func=cmd_permute)
+    pm.add_argument(
+        "--allow-degenerate-null",
+        action="store_true",
+        dest="allow_degenerate_null",
+        help="allow rank_anneal=0 (degenerate null; illustrative only)",
+    )
+    pm.set_defaults(func=cmd_permute, allow_degenerate_null=False)
 
     rc = sub.add_parser(
         "random-compare",
