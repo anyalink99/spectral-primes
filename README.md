@@ -6,6 +6,8 @@ A small **Python toolkit** for experiments with a *spectral* construction tied t
 
 This software is **not** a proof of any claim in that document. It reproduces **definitions and pipelines** so you can run them on a laptop, extend them, and inspect behaviour at moderate scales (e.g. `x ~ 10^6–10^8`). The preprint’s registered Monte Carlo uses much larger `x` and many more zeros; **do not expect the same effect sizes or p-values** here.
 
+> **⚠ v0.5 correction.** The original manuscript had a wrong operator phase/sign, a tautological reading of the `|S| = O(√N log N)` estimate, and an unsupported "15–20% sieve speedup" claim. These are corrected and **empirically verified** here. Short version: the correctly-derived density operator `D(x,Λ) = −Σ ω(γ,Λ) cos(γ ln x)` *does* correlate with prime density (`Z ≈ +26`), but the effect is microscopic (`R² ≈ 0.0035`) and gives **no usable speedup** — ranking windows by it captures primes at the same rate as random. See **[`ERRATA.md`](ERRATA.md)** and **[`experiments/verification/`](experiments/verification/)** for the numbers.
+
 ---
 
 ## Table of contents
@@ -40,6 +42,14 @@ U(x,\Lambda) = \sum_{\gamma_n \le \Lambda} \omega(\gamma_n,\Lambda)\,\frac{\cos(
 $$
 
 Only zeros with `γ_n ≤ Λ` enter the sum. The Python code evaluates `U` in a **vectorized** way over many `x` at once (`numpy`). An optional **C++** utility [`spectral_u`](cpp/README.md) uses **GNU MPFR** (and GMP) for arbitrary-precision values of the same sum—useful for large `x` or cross-checks.
+
+**Which operator predicts density (v0.5).** `U` above is kept for provenance, but it is *not* the right object for local prime density. Differentiating the explicit formula gives `ψ'(x) = 1 − 2x^{−1/2} Σ_{γ>0} cos(γ ln x)`, so the density-driving object is **cos with no `1/γ` weight**, and primes are denser where `Σ cos(γ ln x)` is *negative*. The corrected operator (high value ⟺ more primes) is
+
+$$
+D(x,\Lambda) = -\sum_{\gamma_n \le \Lambda} \omega(\gamma_n,\Lambda)\,\cos(\gamma_n \ln x),
+$$
+
+exposed as `U_density_batch` (and the counting-phase variant `Σ ω sin(γ ln x)/γ` as `U_psi_batch`). See [`ERRATA.md`](ERRATA.md) §1.
 
 ---
 
@@ -204,7 +214,7 @@ pytest -q
 
 | Module | Role |
 |--------|------|
-| `spectral_primes.operator` | `U_batch`, `reference_stats` |
+| `spectral_primes.operator` | `U_batch` (provenance), **`U_density_batch`** (correct density operator), `U_psi_batch` (counting phase), `reference_stats`, `reference_stats_density` |
 | `spectral_primes.subset` | Varₙ energies, subset mask, `U_sparse_at` / `U_sparse_batch`, `reference_stats_sparse` |
 | `spectral_primes.primes` | Prime counting / density (`sympy` by default; optional `gmpy2` via `[fast-primes]`; warns for large endpoints) |
 | `spectral_primes.experiment` | Three-group runs, Z helper, fixed-**B** permutation test (`allow_degenerate_null` for `rank_anneal=0`) |
@@ -268,11 +278,20 @@ $$
 
 ## Limitations and honesty notes
 
-- **Scale:** Effects in the preprint are stated for very large `x` and many zeros; modest `x` and few zeros produce **noise** and different prime density scale.
-- **Statistics:** CLI Z-scores and permutation p-values are **illustrative**; they are not a replication of the preprint’s full registered protocol.
-- **Permutation:** Interpretation depends on `rank_anneal` and on the fixed-pool / fixed-**B** design documented above.
-- **Cramer model:** A convenient null for *density*, not a faithful model of all prime correlations.
-- **No crypto claims:** None of this is offered as a factorization or cryptanalysis tool.
+- **The effect is real but microscopic.** With the corrected operator `D`, correlation with window density is `r ≈ 0.059` (`R² ≈ 0.0035`) — see [`ERRATA.md`](ERRATA.md). It is significant only because `n` is large; it explains ~0.35% of density variance.
+- **No speedup.** Ranking windows by any operator captures primes at the uniform-baseline rate; you can skip only ~2% of windows at <2% prime loss — the same as random ordering. The "15–20% sieve reduction" claim is **withdrawn** (ERRATA §4).
+- **`|S| = O(√N log N)` is a zero-count identity**, not a property of the selection: with `Λ = O(√N)`, the Riemann–von Mangoldt formula already gives `O(√N log N)` zeros below the cutoff (ERRATA §3).
+- **Original operator had the wrong sign:** `U_batch` *anti*-correlates with density. Use `U_density_batch` for prediction.
+- **Scale:** the corrected effect grows with the number of zeros (Λ=80→200: `r` 0.019→0.059) but stays `O(x^{−1/2})` in amplitude; it never becomes large.
+- **Permutation:** the γ-shuffle null is degenerate (invariant operator); see `rank_anneal` / `allow_degenerate_null`.
+- **Cramer model:** a convenient null for *density*, not a faithful model of all prime correlations.
+- **No crypto claims:** none of this is a factorization or cryptanalysis tool.
+
+To reproduce all of the above on your machine:
+
+```bash
+python experiments/verification/verify.py    # real sieve + real zeros; prints A/B/C above
+```
 
 ---
 

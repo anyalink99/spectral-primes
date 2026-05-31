@@ -37,7 +37,10 @@ def cmd_demo(args: argparse.Namespace) -> None:
         window_half=args.half_width,
         u_threshold_sigma=args.sigma_u,
         seed=args.seed,
+        use_density=(args.operator == "density"),
     )
+    print("Operator: {}  (density = corrected; old = provenance, anti-correlates — see ERRATA.md)"
+          .format(meta["operator"]))
     print("Reference U on grid: mean = {:.6g}, std = {:.6g}".format(meta["mu_U"], meta["sigma_U"]))
     print("Lambda = {}, threshold = mean + {} * std".format(meta["Lambda"], meta["u_threshold_sigma"]))
     print("Pool size: {}".format(meta["pool_size"]))
@@ -180,6 +183,12 @@ def main(argv: list[str] | None = None) -> None:
     d.add_argument("--n", type=int, default=40, help="per group")
     d.add_argument("--sigma-u", type=float, default=1.5, dest="sigma_u")
     d.add_argument("--seed", type=int, default=42)
+    d.add_argument(
+        "--operator",
+        choices=("density", "old"),
+        default="density",
+        help="'density' = corrected D=-Σω cos (default); 'old' = manuscript Σω cos/γ (anti-correlates)",
+    )
     d.set_defaults(func=cmd_demo)
 
     ds = sub.add_parser("demo-sparse", help="Three-group demo with U_sparse + Var_n subset")

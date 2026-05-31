@@ -11,6 +11,12 @@ the **index** of the zero in the ordered list, not only on γ_n. With rank_annea
 only γ_n enters; then shuffling the multiset of γ across slots leaves the multiset
 {Var(γ)} and hence U_sparse(x) invariant — a permutation test on γ alone is degenerate.
 A small rank_anneal>0 breaks that symmetry for null simulations (see README).
+
+NOTE (v0.5, see ERRATA.md): this module uses the original +cos/γ form, which inherits
+the phase/sign issue of operator.U_batch — as a *density* predictor it anti-correlates.
+The Var_n selection itself is essentially a low-pass filter on γ (energy decays with γ),
+so |S| tracks the count of zeros below Λ rather than an x-adaptive resonance. The module
+is kept for provenance / permutation-null experiments; for density use operator.U_density_batch.
 """
 from __future__ import annotations
 

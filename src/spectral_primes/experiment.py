@@ -12,7 +12,12 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from spectral_primes.operator import U_batch, reference_stats
+from spectral_primes.operator import (
+    U_batch,
+    U_density_batch,
+    reference_stats,
+    reference_stats_density,
+)
 from spectral_primes.primes import prime_density_per_1e5
 from spectral_primes.subset import U_sparse_batch, reference_stats_sparse
 
@@ -66,12 +71,17 @@ def run_three_group_demo(
     ref_grid_points: int = 500,
     pool_factor: int = 80,
     seed: int = 42,
+    use_density: bool = False,
 ) -> tuple[GroupResult, GroupResult, GroupResult, dict, np.ndarray, np.ndarray, np.ndarray]:
     rng = random.Random(seed)
     n_zeros_used = int(np.sum(np.asarray(gammas, dtype=np.float64) <= Lambda))
     _warn_snr(Lambda=Lambda, x_hi=x_hi, n_zeros_used=n_zeros_used)
     ref_x = np.linspace(x_lo, x_hi, ref_grid_points, dtype=np.float64)
-    mu_u, sig_u = reference_stats(ref_x, gammas, Lambda)
+    # use_density=True uses the corrected density operator D (high D ⟺ more primes);
+    # default keeps the original U_batch for provenance (anti-correlates — see ERRATA.md).
+    op_batch = U_density_batch if use_density else U_batch
+    ref_fn = reference_stats_density if use_density else reference_stats
+    mu_u, sig_u = ref_fn(ref_x, gammas, Lambda)
     if sig_u <= 0:
         raise ValueError("Reference σ_U is zero; widen x range or adjust Λ")
 
@@ -82,7 +92,7 @@ def run_three_group_demo(
         raise ValueError("x range too narrow for window half-width")
     centers = [rng.randrange(span_lo, span_hi) for _ in range(pool_size)]
     x_arr = np.array(centers, dtype=np.float64)
-    u_vals = U_batch(x_arr, gammas, Lambda)
+    u_vals = op_batch(x_arr, gammas, Lambda)
 
     a_idx, b_idx, c_idx = _sample_groups_from_pool(
         rng, u_vals, centers, mu_u, sig_u, u_threshold_sigma, n_per_group, pool_size
@@ -102,6 +112,7 @@ def run_three_group_demo(
         "Lambda": Lambda,
         "u_threshold_sigma": u_threshold_sigma,
         "pool_size": pool_size,
+        "operator": "D_density" if use_density else "U_old",
     }
     return (
         GroupResult("A_Max_U", float(ar.mean()), float(ar.std(ddof=1)), n_per_group),

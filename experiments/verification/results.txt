@@ -1,0 +1,67 @@
+loaded 2500 zeros, γ_1=14.1347 … γ_N=3031.29
+sieving primes up to 9,200,000 …
+π(9,200,000) = 614,917
+
+=== A. PHASE / SIGN  (x∈[2,000,000,9,000,000], half=500, windows=200,000) ===
+mean window density = 6478.555 per 1e5  (≈ 1/ln x ⇒ 6443.2)
+r = Pearson corr(operator, density); Z = r·√n (significance vs r=0);
+high-op/low-op = mean density in the |op−μ|>1.5σ tails.
+
+  Λ=80  (21 zeros γ≤Λ):
+    operator          r       Z      high-op       all     low-op
+    U_old       -0.0082   -3.67     6517.372  6478.555   6487.660
+    U_sin       +0.0090   +4.02     6513.841  6478.555   6472.108
+    D_dens      +0.0189   +8.45     6484.241  6478.555   6496.497
+  Λ=200  (79 zeros γ≤Λ):
+    operator          r       Z      high-op       all     low-op
+    U_old       -0.0306  -13.67     6462.474  6478.555   6506.444
+    U_sin       +0.0088   +3.93     6477.877  6478.555   6490.261
+    D_dens      +0.0591  +26.44     6558.328  6478.555   6424.196
+
+=== B. |S| SCALING  (Var_n>1/N subset, x0=5,000,000, δ=300.0, n_t=64) ===
+regime Λ = c·√N  (paper's claim |S| = O(√N log N)):
+     N    Λ=c√N   #γ≤Λ    |S|    √N·lnN  RvM N(Λ)
+   100    28.28      3      1      46.1       3.1
+   200    40.00      6      3      74.9       6.3
+   400    56.57     12      4     119.8      11.7
+   800    80.00     21      6     189.1      20.5
+  1600   113.14     35      8     295.1      34.9
+  2400   138.56     47     10     381.3      47.0
+fitted exponent  d log|S|/d log N = 0.656   (√N log N ⇒ ≈0.5 + small log correction)
+fitted exponent  d log(#γ≤Λ)/d log N = 0.862   ← |S| just tracks the zero count below the cutoff
+
+regime Λ = 80 FIXED (what the shipped CLI actually does):
+     N      Λ   #γ≤Λ    |S|
+   100     80     21      6
+   200     80     21      6
+   400     80     21      6
+   800     80     21      6
+  1600     80     21      6
+  2400     80     21      6
+→ with Λ fixed, |S| SATURATES: extra zeros are above the cutoff (ω≈0).
+
+=== C. SPEEDUP / 'resonance zone' prime capture (Λ=80.0, windows=40000) ===
+  rank by D_dens:
+    scan top   10% windows → capture  9.98% of primes (uniform baseline = 10%)
+    scan top   20% windows → capture 20.01% of primes (uniform baseline = 20%)
+    scan top   50% windows → capture 50.10% of primes (uniform baseline = 50%)
+    scan top   80% windows → capture 80.03% of primes (uniform baseline = 80%)
+  rank by U_old:
+    scan top   10% windows → capture 10.10% of primes (uniform baseline = 10%)
+    scan top   20% windows → capture 20.13% of primes (uniform baseline = 20%)
+    scan top   50% windows → capture 49.85% of primes (uniform baseline = 50%)
+    scan top   80% windows → capture 80.01% of primes (uniform baseline = 80%)
+  oracle (rank by TRUE density — upper bound):
+    scan top   10% windows → capture 11.11% of primes (uniform baseline = 10%)
+    scan top   20% windows → capture 21.77% of primes (uniform baseline = 20%)
+    scan top   50% windows → capture 52.50% of primes (uniform baseline = 50%)
+    scan top   80% windows → capture 81.72% of primes (uniform baseline = 80%)
+  random ordering (sanity baseline):
+    scan top   10% windows → capture 10.00% of primes (uniform baseline = 10%)
+    scan top   20% windows → capture 20.01% of primes (uniform baseline = 20%)
+    scan top   50% windows → capture 50.00% of primes (uniform baseline = 50%)
+    scan top   80% windows → capture 79.99% of primes (uniform baseline = 80%)
+
+  'Skip low-resonance zones, lose <2% of primes' — how much can we skip?
+    D_dens : can skip  1.99% of windows (paper claims ~15–20%). Uniform random would skip ~2%.
+    U_old  : can skip  2.03% of windows (paper claims ~15–20%). Uniform random would skip ~2%.

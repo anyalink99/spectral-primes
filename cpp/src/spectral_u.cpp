@@ -1,9 +1,13 @@
 /**
- * High-precision evaluation of U(x, Lambda) from the spectral-primes preprint:
+ * High-precision evaluation of the spectral-primes operators (GNU MPFR / GMP).
+ * Gamma values are read from CSV (same format as data/zeros.csv).
  *
- *   U(x,L) = sum_{gamma <= L} exp(-gamma^2/(2L^2)) * cos(gamma * ln x) / gamma
+ * Default (provenance, matches Python U_batch — see ERRATA.md, NOT the right object
+ * for prime density and sign is backwards):
+ *   U(x,L)  = sum_{gamma <= L} exp(-gamma^2/(2L^2)) * cos(gamma * ln x) / gamma
  *
- * Uses GNU MPFR (and GMP). Gamma values are read from CSV (same format as data/zeros.csv).
+ * With --density (matches Python U_density_batch; high value <=> more primes):
+ *   D(x,L)  = - sum_{gamma <= L} exp(-gamma^2/(2L^2)) * cos(gamma * ln x)
  */
 #include <mpfr.h>
 
@@ -22,6 +26,7 @@ static void print_usage(const char* prog) {
          "  --csv     zeros CSV with header n,gamma (default: data/zeros.csv)\n"
          "  --lambda  spectral cutoff Lambda (default: 80)\n"
          "  --prec    MPFR precision in bits (default: 256)\n"
+         "  --density compute density operator D = -sum w*cos (no 1/gamma); default is U\n"
          "  --x       argument x (string, e.g. 1e14 or 100000000000000); repeat for "
          "several points\n"
          "\n"
@@ -62,7 +67,8 @@ static void eval_U(
     const char* x_str,
     const char* lambda_str,
     const std::vector<double>& gammas,
-    mpfr_prec_t prec) {
+    mpfr_prec_t prec,
+    bool density) {
   mpfr_t x, ln_x, lambda, half_l2, gamma_m, w, phase, c, term;
   mpfr_inits2(prec, x, ln_x, lambda, half_l2, gamma_m, w, phase, c, term,
               static_cast<mpfr_ptr>(0));
@@ -110,9 +116,15 @@ static void eval_U(
     mpfr_mul(phase, gamma_m, ln_x, MPFR_RNDN);
     mpfr_cos(c, phase, MPFR_RNDN);
 
-    /* term = w * cos / gamma */
-    mpfr_mul(term, w, c, MPFR_RNDN);
-    mpfr_div(term, term, gamma_m, MPFR_RNDN);
+    if (density) {
+      /* term = - w * cos        (density operator D, no 1/gamma) */
+      mpfr_mul(term, w, c, MPFR_RNDN);
+      mpfr_neg(term, term, MPFR_RNDN);
+    } else {
+      /* term = w * cos / gamma  (provenance operator U) */
+      mpfr_mul(term, w, c, MPFR_RNDN);
+      mpfr_div(term, term, gamma_m, MPFR_RNDN);
+    }
 
     mpfr_add(result, result, term, MPFR_RNDN);
   }
@@ -126,6 +138,7 @@ int main(int argc, char** argv) {
   std::string csv = "data/zeros.csv";
   std::string lambda_str = "80";
   mpfr_prec_t prec = 256;
+  bool density = false;
   std::vector<std::string> xs;
 
   for (int i = 1; i < argc; ++i) {
@@ -133,6 +146,10 @@ int main(int argc, char** argv) {
     if (a == "-h" || a == "--help") {
       print_usage(argv[0]);
       return 0;
+    }
+    if (a == "--density") {
+      density = true;
+      continue;
     }
     if (a == "--csv" && i + 1 < argc) {
       csv = argv[++i];
@@ -173,7 +190,7 @@ int main(int argc, char** argv) {
   mpfr_init2(u, prec);
 
   for (const std::string& xstr : xs) {
-    eval_U(u, xstr.c_str(), lambda_str.c_str(), gammas, prec);
+    eval_U(u, xstr.c_str(), lambda_str.c_str(), gammas, prec, density);
     std::cout << xstr << '\t';
     mpfr_out_str(stdout, 10, 0, u, MPFR_RNDN);
     std::cout << '\n';
